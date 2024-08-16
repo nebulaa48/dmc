@@ -1,0 +1,2 @@
+# dmc
+Database Model CLI
