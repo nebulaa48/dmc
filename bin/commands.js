@@ -4,7 +4,7 @@ const manipulations = require("./db-manipulations");
 const { capitalizeFirstLetter } = require("../utils/string-utils");
 const { SQL_TO_TS } = require("../utils/sql-data-type-conversion");
 
-function link(callback) {
+function link(callback, handleError) {
   yargsInteractive()
     .usage("$0 <command> [args]")
     .interactive({
@@ -29,68 +29,116 @@ function link(callback) {
         fs.writeFileSync(".env", content);
         callback("Link - ok.");
       } catch (err) {
-        console.log(err);
+        handleError(err);
       }
     });
 }
 
-function generateModelsFromDatabase(dbName, ts = false, path, callback) {
-  manipulations.multipleTablesDesc(dbName, (result) => {
-    const rows = result;
-    if (rows && rows.length > 0) {
-      const tables = rows.reduce((tables, row) => {
-        (tables[row.table] = tables[row.table] || []).push(row);
-        return tables;
-      }, {});
-      generateMultiple(dbName, tables, path, ts, callback);
-    } else {
-      callback(result);
-    }
-  });
+function generateModelsFromDatabase(
+  dbName,
+  ts = false,
+  path,
+  callback,
+  handleError
+) {
+  manipulations.checkIfDBexists(
+    dbName,
+    () => {
+      manipulations.multipleTablesDesc(
+        dbName,
+        (result) => {
+          const rows = result;
+          if (rows && rows.length > 0) {
+            const tables = rows.reduce((tables, row) => {
+              (tables[row.table] = tables[row.table] || []).push(row);
+              return tables;
+            }, {});
+            generateMultiple(dbName, tables, path, ts, callback, handleError);
+          } else {
+            callback(result);
+          }
+        },
+        handleError
+      );
+    },
+    handleError
+  );
 }
 
-function generateModelFromTable(dbName, table, ts = false, path, callback) {
-  manipulations.tableDesc(dbName, table, (result) => {
-    const rows = result;
-    if (rows && rows.length > 0) {
-      generateOne(dbName, rows, path, ts, callback);
-    } else {
-      callback(result);
-    }
-  });
+function generateModelFromTable(
+  dbName,
+  table,
+  ts = false,
+  path,
+  callback,
+  handleError
+) {
+  manipulations.checkIfDBexists(
+    dbName,
+    () => {
+      manipulations.tableDesc(
+        dbName,
+        table,
+        (result) => {
+          const rows = result;
+          if (rows && rows.length > 0) {
+            generateOne(dbName, rows, path, ts, callback, handleError);
+          } else {
+            callback(result);
+          }
+        },
+        handleError
+      );
+    },
+    handleError
+  );
 }
 
-function generateMultiple(dbName, tables, path, ts = false, callback) {
+function generateMultiple(
+  dbName,
+  tables,
+  path,
+  ts = false,
+  callback,
+  handleError
+) {
   const tableNames = Object.keys(tables);
-  setOutputFolder(path);
+  setOutputFolder(path, handleError);
 
   const generateFn = ts ? generateFileModelTS : generateFileModelJS;
   try {
     const results = [];
     for (const name of tableNames) {
-      const generate = generateFn(dbName, tables[name], path);
+      const generate = generateFn(dbName, tables[name], path, handleError);
       results.push(generate);
     }
     callback(results.join("\n"));
   } catch (err) {
-    console.log(err);
+    handleError(err);
   }
 }
 
-function generateOne(dbName, colsInfos, path, ts = false, callback) {
-  setOutputFolder(path);
+function generateOne(
+  dbName,
+  colsInfos,
+  path,
+  ts = false,
+  callback,
+  handleError
+) {
+  setOutputFolder(path,handleError);
 
   const generateFn = ts ? generateFileModelTS : generateFileModelJS;
 
   try {
-    const generate = generateFn(dbName, colsInfos, path);
+    const generate = generateFn(dbName, colsInfos, path, handleError);
     callback(generate);
   } catch (err) {
-    console.log(err);
+    handleError(err);
   }
 }
 
-function generateFileModelJS(dbName, colsInfos, path) {
+function generateFileModelJS(dbName, colsInfos, path, handleError) {
   try {
     const tableName = colsInfos[0].table;
     const columns = colsInfos.map((p) => p.column);
@@ -105,10 +153,10 @@ function generateFileModelJS(dbName, colsInfos, path) {
     fs.writeFileSync(path + "/" + tableName + ".js", content);
     return tableName + " - ok.";
   } catch (err) {
-    console.log(err);
+    handleError(err);
   }
 }
-function generateFileModelTS(dbName, colsInfos, path) {
+function generateFileModelTS(dbName, colsInfos, path, handleError) {
   try {
     const tableName = colsInfos[0].table;
     const columns = colsInfos.map((p) => ({
@@ -131,13 +179,17 @@ function generateFileModelTS(dbName, colsInfos, path) {
     fs.writeFileSync(path + "/" + tableName + ".ts", content);
     return tableName + " - ok.";
   } catch (err) {
-    console.log(err);
+    handleError(err);
   }
 }
 
-function setOutputFolder(path) {
-  if (!fs.existsSync(path)) {
-    fs.mkdirSync(path);
+function setOutputFolder(path, handleError) {
+  try {
+    if (!fs.existsSync(path)) {
+      fs.mkdirSync(path);
+    }
+  } catch (err) {
+    handleError(err);
   }
 }
 
