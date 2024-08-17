@@ -1,7 +1,7 @@
-const { connection } = require("./connection");
-const Error = require("./error");
+import { connection } from "./connection.js";
+import Error from "./error.js";
 
-const DB_MANIPULATION = {
+export const DB_MANIPULATION = {
   checkIfDBexists : (dbName, callback, handleError) => {
     connection.query("SHOW DATABASES LIKE '"+dbName+"';",function(err, result) {
       if (err) {
@@ -77,5 +77,3 @@ const DB_MANIPULATION = {
       }
     ),
 };
-
-module.exports = DB_MANIPULATION;

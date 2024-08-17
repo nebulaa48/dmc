@@ -1,12 +1,11 @@
-const dotenv = require("dotenv");
-const mysql = require("mysql");
+import { config } from "dotenv";
+import { createPool } from "mysql";
 
-dotenv.config();
+config();
 
-const connection = mysql.createPool({
+export const connection = createPool({
   host: process.env.HOST,
   user: process.env.USER,
   password: process.env.PASSWORD,
 });
 
-module.exports = { connection };

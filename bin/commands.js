@@ -1,20 +1,43 @@
-const fs = require("fs");
-const colors = require("colors");
-const chalk = require("chalk");
-const manipulations = require("./db-manipulations");
-const ora = require("ora");
-const yargsInteractive = require("yargs-interactive");
-const { version } = require("../package.json");
-const { capitalizeFirstLetter } = require("../utils/string-utils");
-const { SQL_TO_TS } = require("../utils/sql-data-type-conversion");
+import { DB_MANIPULATION } from "./db-manipulations.js";
+import {
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  readFile,
+  readFileSync,
+} from "fs";
+import { capitalizeFirstLetter } from "../utils/string-utils.js";
+import { SQL_TO_TS } from "../utils/sql-data-type-conversion.js";
+import ora from "ora";
+import boxen from "boxen";
+import yargsInteractive from "yargs-interactive";
+import colors from "colors";
+import chalk from "chalk";
+const { version } = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url))
+);
 
 function welcome() {
+  console.log("\n");
   console.log(
-    chalk.bold(colors.rainbow("WELCOME TO DMC [Database Model CLI] !!")) +
-      chalk.italic(" (Version : " + version + ")")
+    boxen(
+      chalk.bold(colors.rainbow("WELCOME TO DMC [Database Model CLI] !!")),
+      {
+        title: chalk.italic("Version : " + version + ""),
+        padding: 1,
+        margin: 1,
+        borderStyle: "double",
+      }
+    )
   );
   console.log(
-    'Type "dmc --help" for more information OR try "dmc link" to begin.'
+    chalk.bold(
+      "Type " +
+        chalk.dim('"dmc --help"') +
+        " for more information OR try " +
+        chalk.dim('"dmc link"') +
+        " to begin."
+    )
   );
 }
 
@@ -40,7 +63,7 @@ function link(callback, handleError) {
       try {
         const { dbHost, dbUser, dbPassword } = result;
         const content = `HOST=${dbHost}\nUSER=${dbUser}\nPASSWORD=${dbPassword}`;
-        fs.writeFileSync(".env", content);
+        writeFileSync(".env", content);
         callback("Link - ok.");
       } catch (err) {
         handleError(err);
@@ -57,10 +80,10 @@ function generateModelsFromDatabase(
 ) {
   const spinner = ora("Generate files\n").start();
   const timeout = setTimeout(() => {
-    manipulations.checkIfDBexists(
+    DB_MANIPULATION.checkIfDBexists(
       dbName,
       () => {
-        manipulations.multipleTablesDesc(
+        DB_MANIPULATION.multipleTablesDesc(
           dbName,
           (result) => {
             const rows = result;
@@ -103,10 +126,10 @@ function generateModelFromTable(
 ) {
   const spinner = ora("Generate file\n").start();
   const timeout = setTimeout(() => {
-    manipulations.checkIfDBexists(
+    DB_MANIPULATION.checkIfDBexists(
       dbName,
       () => {
-        manipulations.tableDesc(
+        DB_MANIPULATION.tableDesc(
           dbName,
           table,
           (result) => {
@@ -194,7 +217,7 @@ function generateFileModelJS(dbName, colsInfos, path, handleError) {
       .map((c) => "\t\tthis." + c + " = " + c + ";\n")
       .join("")}  }\n}
               `;
-    fs.writeFileSync(path + "/" + tableName + ".js", content);
+    writeFileSync(path + "/" + tableName + ".js", content);
     return tableName + " - ok.";
   } catch (err) {
     handleError(err);
@@ -220,7 +243,7 @@ function generateFileModelTS(dbName, colsInfos, path, handleError) {
       .map((c) => "\t\tthis." + c.col + " = " + c.col + ";\n")
       .join("")}  }\n}
                 `;
-    fs.writeFileSync(path + "/" + tableName + ".ts", content);
+    writeFileSync(path + "/" + tableName + ".ts", content);
     return tableName + " - ok.";
   } catch (err) {
     handleError(err);
@@ -229,17 +252,12 @@ function generateFileModelTS(dbName, colsInfos, path, handleError) {
 
 function setOutputFolder(path, handleError) {
   try {
-    if (!fs.existsSync(path)) {
-      fs.mkdirSync(path);
+    if (!existsSync(path)) {
+      mkdirSync(path);
     }
   } catch (err) {
     handleError(err);
   }
 }
 
-module.exports = {
-  welcome,
-  generateModelsFromDatabase,
-  generateModelFromTable,
-  link,
-};
+export { welcome, generateModelsFromDatabase, generateModelFromTable, link };

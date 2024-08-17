@@ -1,4 +1,4 @@
-const CASE_FORMAT = Object.freeze({
+export const CASE_FORMAT = Object.freeze({
   FLATCASE: "flatcase", //flatcase
   PASCALCASE: "pascalcase", //PascalCase
   CAMELCASE: "camelcase", //camelCase
@@ -8,6 +8,4 @@ const CASE_FORMAT = Object.freeze({
   PASCALSNAKECASE: "pascalsnakecase", //Pascal_Snake_Case
 });
 
-const CASE_FORMAT_LIST = Object.values(CASE_FORMAT);
-
-module.exports = { CASE_FORMAT, CASE_FORMAT_LIST };
+export const CASE_FORMAT_LIST = Object.values(CASE_FORMAT);

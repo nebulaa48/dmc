@@ -1,10 +1,9 @@
 #! /usr/bin/env node
-const { CASE_FORMAT, CASE_FORMAT_LIST } = require("./case-format");
-const commands = require("./commands");
-const yargs = require("yargs");
+import { CASE_FORMAT, CASE_FORMAT_LIST } from "./case-format.js";
+import { welcome, generateModelsFromDatabase, generateModelFromTable, link } from "./commands.js";
+import yargs from "yargs";
 
-yargs
-  .scriptName("model-generator")
+yargs().scriptName("model-generator")
   .usage("$0 <cmd> [args]")
   .command("*", "", {}, commandHandler)
   .command("link", "To link DMC to a MySQL server", {}, commandHandler)
@@ -64,11 +63,11 @@ function commandHandler(argv) {
   const arg = argv._[0];
 
   if (!arg) {
-    commands.welcome();
+    welcome();
   }
 
   if (arg === "gdb") {
-    commands.generateModelsFromDatabase(
+    generateModelsFromDatabase(
       argv.database,
       argv.ts,
       argv.path,
@@ -81,7 +80,7 @@ function commandHandler(argv) {
   }
 
   if (arg === "gt") {
-    commands.generateModelFromTable(
+    generateModelFromTable(
       argv.database,
       argv.table,
       argv.ts,
@@ -95,7 +94,7 @@ function commandHandler(argv) {
   }
 
   if (arg === "link") {
-    commands.link((result) => {
+    link((result) => {
       console.log(result);
       yargs.exit();
     }, handleError);

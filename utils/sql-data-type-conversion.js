@@ -40,4 +40,4 @@ conversion.set("DOUBLE PRECISION", "number");
 conversion.set("DECIMAL", "number");
 conversion.set("DEC", "number");
 
-module.exports = {SQL_TO_TS : conversion}
+export { conversion as SQL_TO_TS };
