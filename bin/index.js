@@ -1,9 +1,19 @@
 #! /usr/bin/env node
 import { CASE_FORMAT, CASE_FORMAT_LIST } from "./case-format.js";
-import { welcome, generateModelsFromDatabase, generateModelFromTable, link } from "./commands.js";
-import yargs from "yargs";
+import {
+  welcome,
+  generateModelsFromDatabase,
+  generateModelFromTable,
+  link,
+  formatInfos,
+} from "./commands.js";
+import { hideBin } from "yargs/helpers";
+import y from "yargs";
 
-yargs().scriptName("model-generator")
+const yargs = y(hideBin(process.argv));
+
+yargs
+  .scriptName("model-generator")
   .usage("$0 <cmd> [args]")
   .command("*", "", {}, commandHandler)
   .command("link", "To link DMC to a MySQL server", {}, commandHandler)
@@ -38,11 +48,11 @@ yargs().scriptName("model-generator")
     describe: "Set Output Path",
   })
   .option("f", {
-    type: "string",
+    type: "array",
     alias: "format",
-    default: CASE_FORMAT.FLATCASE,
+    default: [CASE_FORMAT.DASHCASE, CASE_FORMAT.CAMELCASE],
     choices: CASE_FORMAT_LIST,
-    describe: "Set Case Format",
+    describe: "Set Case Format for file name and file properties",
   })
   .option("fi", {
     type: "boolean",
@@ -63,13 +73,18 @@ function commandHandler(argv) {
   const arg = argv._[0];
 
   if (!arg) {
-    welcome();
+    if (argv.fi) {
+      formatInfos();
+    } else {
+      welcome();
+    }
   }
 
   if (arg === "gdb") {
     generateModelsFromDatabase(
       argv.database,
       argv.ts,
+      argv.f,
       argv.path,
       (result) => {
         console.log(result);
@@ -84,6 +99,7 @@ function commandHandler(argv) {
       argv.database,
       argv.table,
       argv.ts,
+      argv.f,
       argv.path,
       (result) => {
         console.log(result);

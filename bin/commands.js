@@ -1,11 +1,5 @@
 import { DB_MANIPULATION } from "./db-manipulations.js";
-import {
-  writeFileSync,
-  existsSync,
-  mkdirSync,
-  readFile,
-  readFileSync,
-} from "fs";
+import { writeFileSync, existsSync, mkdirSync, readFileSync } from "fs";
 import { capitalizeFirstLetter } from "../utils/string-utils.js";
 import { SQL_TO_TS } from "../utils/sql-data-type-conversion.js";
 import ora from "ora";
@@ -13,6 +7,12 @@ import boxen from "boxen";
 import yargsInteractive from "yargs-interactive";
 import colors from "colors";
 import chalk from "chalk";
+import Table from "cli-table";
+import {
+  CASE_FORMAT_LIST,
+  FILE_CASE_FORMAT_EXEMPLES,
+  PROPERTY_CASE_FORMAT_EXEMPLES,
+} from "./case-format.js";
 const { version } = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url))
 );
@@ -39,6 +39,48 @@ function welcome() {
         " to begin."
     )
   );
+}
+
+function formatInfos() {
+  var table = new Table({
+    head: [chalk.bold.white("Format Option"), chalk.bold.white("Exemple")],
+    chars: {
+      top: "═",
+      "top-mid": "╤",
+      "top-left": "╔",
+      "top-right": "╗",
+      bottom: "═",
+      "bottom-mid": "╧",
+      "bottom-left": "╚",
+      "bottom-right": "╝",
+      left: "║",
+      "left-mid": "╟",
+      mid: "─",
+      "mid-mid": "┼",
+      right: "║",
+      "right-mid": "╢",
+      middle: "│",
+    },
+  });
+  table.push(
+    ...CASE_FORMAT_LIST.map((c) => [
+      c,
+      chalk.italic(
+        FILE_CASE_FORMAT_EXEMPLES[c] +
+          " - " +
+          (PROPERTY_CASE_FORMAT_EXEMPLES[c] === "Not Available"
+            ? chalk.strikethrough(PROPERTY_CASE_FORMAT_EXEMPLES[c])
+            : PROPERTY_CASE_FORMAT_EXEMPLES[c])
+      ),
+    ])
+  );
+
+  console.log(
+    'You can change the case format for the file generation by add "-f [file-format] [property-format]" to the "dmc gdb" or "dmc gt" command.'
+  );
+  console.log("Here a list of each case format available with exemples :");
+
+  console.log(table.toString());
 }
 
 function link(callback, handleError) {
@@ -74,89 +116,101 @@ function link(callback, handleError) {
 function generateModelsFromDatabase(
   dbName,
   ts = false,
+  format,
   path,
   callback,
   handleError
 ) {
-  const spinner = ora("Generate files\n").start();
-  const timeout = setTimeout(() => {
-    DB_MANIPULATION.checkIfDBexists(
-      dbName,
-      () => {
-        DB_MANIPULATION.multipleTablesDesc(
-          dbName,
-          (result) => {
-            const rows = result;
-            if (rows && rows.length > 0) {
-              const tables = rows.reduce((tables, row) => {
-                (tables[row.table] = tables[row.table] || []).push(row);
-                return tables;
-              }, {});
-              generateMultiple(
-                dbName,
-                tables,
-                path,
-                ts,
-                (result) => {
-                  callback(result);
-                  spinner.stop();
-                },
-                handleError
-              );
-            } else {
-              callback(result);
-            }
-          },
-          handleError
-        );
-      },
-      handleError
-    );
-    clearTimeout(timeout);
-  }, 2000);
+  const formatCheck = checkFormatOption(format);
+  if (formatCheck.ok) {
+    const spinner = ora("Generate files\n").start();
+    const timeout = setTimeout(() => {
+      DB_MANIPULATION.checkIfDBexists(
+        dbName,
+        () => {
+          DB_MANIPULATION.multipleTablesDesc(
+            dbName,
+            (result) => {
+              const rows = result;
+              if (rows && rows.length > 0) {
+                const tables = rows.reduce((tables, row) => {
+                  (tables[row.table] = tables[row.table] || []).push(row);
+                  return tables;
+                }, {});
+                generateMultiple(
+                  dbName,
+                  tables,
+                  path,
+                  ts,
+                  (result) => {
+                    callback(result);
+                    spinner.stop();
+                  },
+                  handleError
+                );
+              } else {
+                callback(result);
+              }
+            },
+            handleError
+          );
+        },
+        handleError
+      );
+      clearTimeout(timeout);
+    }, 2000);
+  } else {
+    callback(formatCheck.message);
+  }
 }
 
 function generateModelFromTable(
   dbName,
   table,
   ts = false,
+  format,
   path,
   callback,
   handleError
 ) {
-  const spinner = ora("Generate file\n").start();
-  const timeout = setTimeout(() => {
-    DB_MANIPULATION.checkIfDBexists(
-      dbName,
-      () => {
-        DB_MANIPULATION.tableDesc(
-          dbName,
-          table,
-          (result) => {
-            const rows = result;
-            if (rows && rows.length > 0) {
-              generateOne(
-                dbName,
-                rows,
-                path,
-                ts,
-                (result) => {
-                  callback(result);
-                  spinner.stop();
-                },
-                handleError
-              );
-            } else {
-              callback(result);
-            }
-          },
-          handleError
-        );
-      },
-      handleError
-    );
-    clearTimeout(timeout);
-  }, 2000);
+  const formatCheck = checkFormatOption(format);
+  if (formatCheck.ok) {
+    const spinner = ora("Generate file\n").start();
+    const timeout = setTimeout(() => {
+      DB_MANIPULATION.checkIfDBexists(
+        dbName,
+        () => {
+          DB_MANIPULATION.tableDesc(
+            dbName,
+            table,
+            (result) => {
+              const rows = result;
+              if (rows && rows.length > 0) {
+                generateOne(
+                  dbName,
+                  rows,
+                  path,
+                  ts,
+                  (result) => {
+                    callback(result);
+                    spinner.stop();
+                  },
+                  handleError
+                );
+              } else {
+                callback(result);
+              }
+            },
+            handleError
+          );
+        },
+        handleError
+      );
+      clearTimeout(timeout);
+    }, 2000);
+  } else {
+    callback(formatCheck.message);
+  }
 }
 
 function generateMultiple(
@@ -250,6 +304,22 @@ function generateFileModelTS(dbName, colsInfos, path, handleError) {
   }
 }
 
+function checkFormatOption(format) {
+  if (format.length === 2) {
+    return { ok: true };
+  } else {
+    return {
+      ok: false,
+      message:
+        '"-format" option Need 2 arguments, recieved ' + format.length + ".",
+    };
+  }
+}
+function formatFileName(fileName, format) {
+  
+}
+
+function formatProperty(format) {}
 function setOutputFolder(path, handleError) {
   try {
     if (!existsSync(path)) {
@@ -260,4 +330,10 @@ function setOutputFolder(path, handleError) {
   }
 }
 
-export { welcome, generateModelsFromDatabase, generateModelFromTable, link };
+export {
+  welcome,
+  generateModelsFromDatabase,
+  generateModelFromTable,
+  link,
+  formatInfos,
+};
