@@ -1,17 +1,18 @@
 #! /usr/bin/env node
-
+const { CASE_FORMAT, CASE_FORMAT_LIST } = require("./case-format");
 const commands = require("./commands");
 const yargs = require("yargs");
 
 yargs
   .scriptName("model-generator")
   .usage("$0 <cmd> [args]")
-  .command("link", "To link DMC to a MySQL server", {}, handler)
+  .command("*", "", {}, commandHandler)
+  .command("link", "To link DMC to a MySQL server", {}, commandHandler)
   .command(
     "gdb [database]",
     "Generate Files Models From Database",
     builder,
-    handler
+    commandHandler
   )
   .command(
     "gt [database] [table]",
@@ -24,7 +25,7 @@ yargs
       });
       builder(yargs);
     },
-    handler
+    commandHandler
   )
   .option("ts", {
     type: "boolean",
@@ -37,7 +38,18 @@ yargs
     default: "./models",
     describe: "Set Output Path",
   })
-
+  .option("f", {
+    type: "string",
+    alias: "format",
+    default: CASE_FORMAT.FLATCASE,
+    choices: CASE_FORMAT_LIST,
+    describe: "Set Case Format",
+  })
+  .option("fi", {
+    type: "boolean",
+    alias: "format-infos",
+    describe: "Give Case Format Infos And Exemples",
+  })
   .strict()
   .help().argv;
 
@@ -48,18 +60,20 @@ function builder(yargs) {
     demandOption: yargs.demandOption("database"),
   });
 }
-function handler(argv) {
+function commandHandler(argv) {
   const arg = argv._[0];
 
+  if (!arg) {
+    commands.welcome();
+  }
+
   if (arg === "gdb") {
-    console.log("DATABASE GENERATOR");
     commands.generateModelsFromDatabase(
       argv.database,
       argv.ts,
       argv.path,
       (result) => {
         console.log(result);
-        console.log("GENERATION ENDED");
         yargs.exit();
       },
       handleError
@@ -67,7 +81,6 @@ function handler(argv) {
   }
 
   if (arg === "gt") {
-    console.log("TABLE GENERATOR");
     commands.generateModelFromTable(
       argv.database,
       argv.table,
@@ -75,7 +88,6 @@ function handler(argv) {
       argv.path,
       (result) => {
         console.log(result);
-        console.log("GENERATION ENDED");
         yargs.exit();
       },
       handleError
@@ -104,7 +116,7 @@ function handleError(err) {
         console.log(err.code);
       }
     }
-  }else{
+  } else {
     console.log(err);
   }
   yargs.exit();

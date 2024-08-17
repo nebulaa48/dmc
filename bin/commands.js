@@ -1,8 +1,22 @@
 const fs = require("fs");
-const yargsInteractive = require("yargs-interactive");
+const colors = require("colors");
+const chalk = require("chalk");
 const manipulations = require("./db-manipulations");
+const ora = require("ora");
+const yargsInteractive = require("yargs-interactive");
+const { version } = require("../package.json");
 const { capitalizeFirstLetter } = require("../utils/string-utils");
 const { SQL_TO_TS } = require("../utils/sql-data-type-conversion");
+
+function welcome() {
+  console.log(
+    chalk.bold(colors.rainbow("WELCOME TO DMC [Database Model CLI] !!")) +
+      chalk.italic(" (Version : " + version + ")")
+  );
+  console.log(
+    'Type "dmc --help" for more information OR try "dmc link" to begin.'
+  );
+}
 
 function link(callback, handleError) {
   yargsInteractive()
@@ -41,28 +55,42 @@ function generateModelsFromDatabase(
   callback,
   handleError
 ) {
-  manipulations.checkIfDBexists(
-    dbName,
-    () => {
-      manipulations.multipleTablesDesc(
-        dbName,
-        (result) => {
-          const rows = result;
-          if (rows && rows.length > 0) {
-            const tables = rows.reduce((tables, row) => {
-              (tables[row.table] = tables[row.table] || []).push(row);
-              return tables;
-            }, {});
-            generateMultiple(dbName, tables, path, ts, callback, handleError);
-          } else {
-            callback(result);
-          }
-        },
-        handleError
-      );
-    },
-    handleError
-  );
+  const spinner = ora("Generate files\n").start();
+  const timeout = setTimeout(() => {
+    manipulations.checkIfDBexists(
+      dbName,
+      () => {
+        manipulations.multipleTablesDesc(
+          dbName,
+          (result) => {
+            const rows = result;
+            if (rows && rows.length > 0) {
+              const tables = rows.reduce((tables, row) => {
+                (tables[row.table] = tables[row.table] || []).push(row);
+                return tables;
+              }, {});
+              generateMultiple(
+                dbName,
+                tables,
+                path,
+                ts,
+                (result) => {
+                  callback(result);
+                  spinner.stop();
+                },
+                handleError
+              );
+            } else {
+              callback(result);
+            }
+          },
+          handleError
+        );
+      },
+      handleError
+    );
+    clearTimeout(timeout);
+  }, 2000);
 }
 
 function generateModelFromTable(
@@ -73,25 +101,39 @@ function generateModelFromTable(
   callback,
   handleError
 ) {
-  manipulations.checkIfDBexists(
-    dbName,
-    () => {
-      manipulations.tableDesc(
-        dbName,
-        table,
-        (result) => {
-          const rows = result;
-          if (rows && rows.length > 0) {
-            generateOne(dbName, rows, path, ts, callback, handleError);
-          } else {
-            callback(result);
-          }
-        },
-        handleError
-      );
-    },
-    handleError
-  );
+  const spinner = ora("Generate file\n").start();
+  const timeout = setTimeout(() => {
+    manipulations.checkIfDBexists(
+      dbName,
+      () => {
+        manipulations.tableDesc(
+          dbName,
+          table,
+          (result) => {
+            const rows = result;
+            if (rows && rows.length > 0) {
+              generateOne(
+                dbName,
+                rows,
+                path,
+                ts,
+                (result) => {
+                  callback(result);
+                  spinner.stop();
+                },
+                handleError
+              );
+            } else {
+              callback(result);
+            }
+          },
+          handleError
+        );
+      },
+      handleError
+    );
+    clearTimeout(timeout);
+  }, 2000);
 }
 
 function generateMultiple(
@@ -107,12 +149,13 @@ function generateMultiple(
 
   const generateFn = ts ? generateFileModelTS : generateFileModelJS;
   try {
-    const results = [];
+    const generated = [];
     for (const name of tableNames) {
       const generate = generateFn(dbName, tables[name], path, handleError);
-      results.push(generate);
+      console.log(generate);
+      generated.push(generate);
     }
-    callback(results.join("\n"));
+    callback(generated.length + "/" + tableNames.length + " tables generated.");
   } catch (err) {
     handleError(err);
   }
@@ -126,13 +169,14 @@ function generateOne(
   callback,
   handleError
 ) {
-  setOutputFolder(path,handleError);
+  setOutputFolder(path, handleError);
 
   const generateFn = ts ? generateFileModelTS : generateFileModelJS;
 
   try {
     const generate = generateFn(dbName, colsInfos, path, handleError);
-    callback(generate);
+    console.log(generate);
+    callback("Table file generated.");
   } catch (err) {
     handleError(err);
   }
@@ -194,6 +238,7 @@ function setOutputFolder(path, handleError) {
 }
 
 module.exports = {
+  welcome,
   generateModelsFromDatabase,
   generateModelFromTable,
   link,

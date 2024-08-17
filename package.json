@@ -25,8 +25,11 @@
   },
   "homepage": "https://github.com/nebulaa48/dmc#readme",
   "dependencies": {
+    "chalk": "^4.1.2",
+    "colors": "^1.4.0",
     "dotenv": "^16.4.5",
     "mysql": "^2.18.1",
+    "ora": "^5.4.1",
     "yargs": "^17.7.2",
     "yargs-interactive": "^3.0.1"
   }
