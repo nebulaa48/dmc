@@ -1,4 +1,5 @@
 export function errorHandler(yargs, err) {
+  console.log(err);
   if (err.code) {
     console.log(err.code);
     if (err.code === "ER_ACCESS_DENIED_ERROR") {

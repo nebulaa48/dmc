@@ -2,9 +2,9 @@
 
 import { CASE_FORMAT, CASE_FORMAT_LIST } from "./entities/case-format.js";
 import { hideBin } from "yargs/helpers";
-import y from "yargs";
 import { commandHandler } from "./yargs/command-handler.js";
 import { commandBuilder } from "./yargs/command-builder.js";
+import y from "yargs";
 
 const yargs = y(hideBin(process.argv));
 
@@ -16,13 +16,13 @@ yargs
     commandHandler(yargs, args)
   )
   .command(
-    "gdb [database]",
+    "gdb",
     "Generate Files Models From Database",
     commandBuilder,
     (args) => commandHandler(yargs, args)
   )
   .command(
-    "gt [database] [table]",
+    "gt [table]",
     "Generate File Model From A Specific Table",
     (yargs) => {
       yargs.positional("table", {

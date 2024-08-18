@@ -4,9 +4,10 @@ import { capitalizeFirstLetter } from "../../utils/string-utils.js";
 import { SQL_TO_TS } from "../entities/sql-data-type-conversion.js";
 import { writeFileSync } from "fs";
 import ora from "ora";
+import { generateFile, setOutputFolder } from "../../utils/generate-utils.js";
+import { CASE_FORMAT } from "../entities/case-format.js";
 
-export function generateModelsFromDatabase(
-  dbName,
+export function generateAllModels(
   ts = false,
   format,
   path,
@@ -17,38 +18,28 @@ export function generateModelsFromDatabase(
   if (formatCheck.ok) {
     const spinner = ora("Generate files\n").start();
     const timeout = setTimeout(() => {
-      DB.checkIfDBexists(
-        dbName,
-        () => {
-          DB.multipleTablesDesc(
-            dbName,
+      DB.multipleTablesDesc((result) => {
+        const rows = result;
+        if (rows && rows.length > 0) {
+          const tables = rows.reduce((tables, row) => {
+            (tables[row.table] = tables[row.table] || []).push(row);
+            return tables;
+          }, {});
+          generateMultiple(
+            tables,
+            path,
+            ts,
+            format,
             (result) => {
-              const rows = result;
-              if (rows && rows.length > 0) {
-                const tables = rows.reduce((tables, row) => {
-                  (tables[row.table] = tables[row.table] || []).push(row);
-                  return tables;
-                }, {});
-                generateMultiple(
-                  dbName,
-                  tables,
-                  path,
-                  ts,
-                  (result) => {
-                    callback(result);
-                    spinner.stop();
-                  },
-                  errorHandler
-                );
-              } else {
-                callback(result);
-              }
+              callback(result);
+              spinner.stop();
             },
             errorHandler
           );
-        },
-        errorHandler
-      );
+        } else {
+          callback(result);
+        }
+      }, errorHandler);
       clearTimeout(timeout);
     }, 2000);
   } else {
@@ -57,7 +48,6 @@ export function generateModelsFromDatabase(
 }
 
 export function generateModelFromTable(
-  dbName,
   table,
   ts = false,
   format,
@@ -69,47 +59,40 @@ export function generateModelFromTable(
   if (formatCheck.ok) {
     const spinner = ora("Generate file\n").start();
     const timeout = setTimeout(() => {
-      DB.checkIfDBexists(
-        dbName,
-        () => {
-          DB.tableDesc(
-            dbName,
-            table,
-            (result) => {
-              const rows = result;
-              if (rows && rows.length > 0) {
-                generateOne(
-                  dbName,
-                  rows,
-                  path,
-                  ts,
-                  (result) => {
-                    callback(result);
-                    spinner.stop();
-                  },
-                  errorHandler
-                );
-              } else {
+      DB.tableDesc(
+        table,
+        (result) => {
+          const rows = result;
+          if (rows && rows.length > 0) {
+            generateOne(
+              rows,
+              path,
+              ts,
+              format,
+              (result) => {
                 callback(result);
-              }
-            },
-            errorHandler
-          );
+                spinner.stop();
+              },
+              errorHandler
+            );
+          } else {
+            callback(result);
+          }
         },
         errorHandler
       );
       clearTimeout(timeout);
-    }, 2000);
+    }, 1000);
   } else {
     callback(formatCheck.message);
   }
 }
 
 const generateMultiple = (
-  dbName,
   tables,
   path,
   ts = false,
+  format,
   callback,
   errorHandler
 ) => {
@@ -120,7 +103,7 @@ const generateMultiple = (
   try {
     const generated = [];
     for (const name of tableNames) {
-      const generate = generateFn(dbName, tables[name], path, errorHandler);
+      const generate = generateFn(tables[name], path, format, errorHandler);
       console.log(generate);
       generated.push(generate);
     }
@@ -131,10 +114,10 @@ const generateMultiple = (
 };
 
 const generateOne = (
-  dbName,
   colsInfos,
   path,
   ts = false,
+  format,
   callback,
   errorHandler
 ) => {
@@ -143,7 +126,7 @@ const generateOne = (
   const generateFn = ts ? generateFileModelTS : generateFileModelJS;
 
   try {
-    const generate = generateFn(dbName, colsInfos, path, errorHandler);
+    const generate = generateFn(colsInfos, path, format, errorHandler);
     console.log(generate);
     callback("Table file generated.");
   } catch (err) {
@@ -151,30 +134,30 @@ const generateOne = (
   }
 };
 
-const generateFileModelJS = (dbName, colsInfos, path, errorHandler) => {
+const generateFileModelJS = (colsInfos, path, format, errorHandler) => {
   try {
-    formatCase("ého");
+    console.log(format);
     const tableName = colsInfos[0].table;
-    const columns = colsInfos.map((p) => p.column);
-    const content = `//GENERATED TABLE MODEL FOR TABLE ${tableName} FROM DATABASE ${dbName}\n\nclass ${capitalizeFirstLetter(
-      tableName
-    )} {\n${columns
+    const columns = colsInfos.map((p) => formatCase(p.column, format[1]));
+    const content = `//GENERATED TABLE MODEL FOR TABLE ${tableName} FROM DATABASE ${
+      process.env.DB_NAME
+    }\n\nclass ${formatCase(tableName, CASE_FORMAT.PASCALCASE)} {\n${columns
       .map((c) => "  " + c + ";\n")
       .join("")}\n  constructor(${columns.join(", ")}) {\n${columns
       .map((c) => "\t\tthis." + c + " = " + c + ";\n")
       .join("")}  }\n}
                   `;
-    writeFileSync(path + "/" + tableName + ".js", content);
+    generateFile(content, path, formatCase(tableName, format[0]), ".js");
     return tableName + " - ok.";
   } catch (err) {
     errorHandler(err);
   }
 };
-const generateFileModelTS = (dbName, colsInfos, path, errorHandler) => {
+const generateFileModelTS = (colsInfos, path, format, errorHandler) => {
   try {
     const tableName = colsInfos[0].table;
     const columns = colsInfos.map((p) => ({
-      col: p.column,
+      col: formatCase(p.column, format[1]),
       type: SQL_TO_TS.get(p.type.toUpperCase()),
       nullable: p.nullable === "YES",
     }));
@@ -182,15 +165,15 @@ const generateFileModelTS = (dbName, colsInfos, path, errorHandler) => {
       (c) => c.col + ": " + c.type + (c.nullable ? " | null" : "")
     );
 
-    const content = `//GENERATED TABLE MODEL FOR TABLE ${tableName} FROM DATABASE ${dbName}\n\nclass ${capitalizeFirstLetter(
-      tableName
-    )} {\n${ptypes
+    const content = `//GENERATED TABLE MODEL FOR TABLE ${tableName} FROM DATABASE ${
+      process.env.DB_NAME
+    }\n\nclass ${formatCase(tableName, CASE_FORMAT.PASCALCASE)} {\n${ptypes
       .map((t) => "  " + t + ";\n")
       .join("")}\n  constructor(${ptypes.join(", ")}) {\n${columns
       .map((c) => "\t\tthis." + c.col + " = " + c.col + ";\n")
       .join("")}  }\n}
                     `;
-    writeFileSync(path + "/" + tableName + ".ts", content);
+    generateFile(content, path, formatCase(tableName, format[0]), ".ts");
     return tableName + " - ok.";
   } catch (err) {
     errorHandler(err);

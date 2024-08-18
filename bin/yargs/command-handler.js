@@ -13,8 +13,7 @@ export function commandHandler(yargs, argv) {
   }
 
   if (arg === "gdb") {
-    COMMANDS.generateModelsFromDatabase(
-      argv.database,
+    COMMANDS.generateAllModels(
       argv.ts,
       argv.f,
       argv.path,
@@ -29,7 +28,6 @@ export function commandHandler(yargs, argv) {
 
   if (arg === "gt") {
     COMMANDS.generateModelFromTable(
-      argv.database,
       argv.table,
       argv.ts,
       argv.f,
