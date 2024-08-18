@@ -1,11 +1,15 @@
-import { CASE_FORMAT } from "../bin/case-format";
+import { CASE_FORMAT } from "../bin/entities/case-format.js";
+import { normalize } from "./string-utils.js";
 
 export function formatCase(str, format) {
   const caseFormat = CASE_FORMAT_FN[format];
   return caseFormat ? caseFormat(str) : str;
 }
 
-export function formatToCamelcase(str) {}
+export function formatToCamelcase(str) {
+  const normalizedStr = normalize(str);
+  console.log(normalizedStr);
+}
 export function formatToConstantcase(str) {}
 export function formatToDashcase(str) {}
 export function formatToFlatcase(str) {}
