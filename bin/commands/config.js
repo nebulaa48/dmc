@@ -1,8 +1,9 @@
 import yargsInteractive from "yargs-interactive";
 import { writeFileSync } from "fs";
-import { LinkConfig } from "../entities/link-config.js";
+import { Config } from "../entities/config.js";
+import { errorHandler } from "../generator/error-handler.js";
 
-export function link(callback, errorHandler) {
+export function config(argv) {
   yargsInteractive()
     .usage("$0 <command> [args]")
     .interactive({
@@ -40,21 +41,15 @@ export function link(callback, errorHandler) {
 
         if (!dbName) {
           console.log("\nMissing Database Name.\n");
-          retry(callback, errorHandler);
+          retry();
         } else {
-          const { config } = new LinkConfig(
-            dbHost,
-            dbPort,
-            dbName,
-            dbUser,
-            dbPassword
-          );
+          const config = new Config(dbHost, dbPort, dbName, dbUser, dbPassword);
 
-          const content = config.map((c) => c[0] + "=" + c[1] + "\n").join("");
+          const content = JSON.stringify(config);
 
-          writeFileSync(".env", content);
+          writeFileSync("dmc-config.json", content);
 
-          callback("Link - ok.");
+          callback("Config - ok.");
         }
       } catch (err) {
         errorHandler(err);
@@ -62,7 +57,7 @@ export function link(callback, errorHandler) {
     });
 }
 
-const retry = (callback, errorHandler) => {
+const retry = (argv) => {
   yargsInteractive()
     .usage("$0 <command> [args]")
     .interactive({
@@ -75,7 +70,7 @@ const retry = (callback, errorHandler) => {
     .then((result) => {
       if (result.retry) {
         console.log("\n");
-        link(callback, errorHandler);
+        config(argv);
       }
     });
 };

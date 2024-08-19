@@ -6,7 +6,7 @@ import {
   PROPERTY_CASE_FORMAT_EXEMPLES,
 } from "../entities/case-format.js";
 
-export function formatInfos() {
+export const formatInfos = () => {
   var table = new Table({
     head: [chalk.bold.white("Format Option"), chalk.bold.white("Exemple")],
     chars: {

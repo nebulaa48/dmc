@@ -1,10 +1,7 @@
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from "fs";
+import { errorHandler } from "../bin/generator/error-handler.js";
 
-export function formatFileName(fileName, format) {}
-
-export function formatProperty(format) {}
-
-export function setOutputFolder(path, errorHandler) {
+export function setOutputFolder(path) {
   try {
     if (!existsSync(path)) {
       mkdirSync(path);
@@ -26,6 +23,6 @@ export function generateFile(content, path, fileName, ext) {
     }
     writeFileSync(filePath, content);
   } catch (err) {
-    throw err;
+    errorHandler(err);
   }
 }

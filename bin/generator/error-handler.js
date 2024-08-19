@@ -1,5 +1,4 @@
-export function errorHandler(yargs, err) {
-  console.log(err);
+export function errorHandler(err) {
   if (err.code) {
     console.log(err.code);
     if (err.code === "ER_ACCESS_DENIED_ERROR") {
@@ -16,5 +15,4 @@ export function errorHandler(yargs, err) {
   } else {
     console.log(err);
   }
-  yargs.exit();
 }

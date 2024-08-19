@@ -1,13 +1,25 @@
-import { readFileSync } from "fs";
+import { OPTIONS } from "../options/options.js";
+import { COMMANDS } from "./commands.js";
 import boxen from "boxen";
 import colors from "colors";
 import chalk from "chalk";
+import { parse } from "../../utils/json-utils.js";
 
-const { version } = JSON.parse(
-  readFileSync(new URL("../../package.json", import.meta.url))
-);
+export function global(argv) {
+  const arg = argv._[0];
 
-export function welcome() {
+  if (!arg) {
+    if (argv[OPTIONS.FI.key]) {
+      OPTIONS.FI.action();
+    } else {
+      welcome();
+    }
+  }
+}
+
+function welcome() {
+  const { version } = parse("../package.json");
+
   console.log("\n");
   console.log(
     boxen(
@@ -25,7 +37,7 @@ export function welcome() {
       "Type " +
         chalk.dim('"dmc --help"') +
         " for more information OR try " +
-        chalk.dim('"dmc link"') +
+        chalk.dim('"dmc ' + COMMANDS.CONFIG.command + '"') +
         " to begin."
     )
   );

@@ -1,12 +1,12 @@
 import { createPool } from "mysql";
-import { config } from "dotenv";
+import { getConfig } from "../../utils/config-utils.js";
 
-config();
+const CONFIG = getConfig();
 
 export const connection = createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT,
+  host: CONFIG.dbHost,
+  user: CONFIG.dbUser,
+  password: CONFIG.dbPassword,
+  database: CONFIG.dbName,
+  port: CONFIG.dbPort,
 });
