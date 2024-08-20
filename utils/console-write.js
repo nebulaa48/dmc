@@ -7,10 +7,13 @@ export class ConsoleWrite {
     console.log(message);
   }
   static info(message) {
-    console.log(chalk.bold(chalk.bgCyan("INFO") + " -> " + message));
+    console.log(chalk.bold(chalk.bgBlue("--INFO--") + " -> " + message));
+  }
+  static success(message) {
+    console.log(chalk.bold(chalk.bgGreenBright("--SUCCESS--") + " -> " + message));
   }
   static error(message) {
-    console.log(chalk.bold(chalk.bgRed("ERROR") + " -> " + message));
+    console.log(chalk.bold(chalk.bgRed("--ERROR--") + " -> " + message));
   }
   static table(head, data) {
     var table = new Table({

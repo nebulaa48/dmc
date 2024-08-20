@@ -19,4 +19,5 @@ export function errorHandler(err) {
   } else {
     ConsoleWrite.error(err);
   }
+  process.exit() //TODO -> Voir si y a mieux
 }

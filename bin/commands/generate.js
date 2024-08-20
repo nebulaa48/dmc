@@ -32,25 +32,23 @@ function generateAllModels(argv, dbName) {
   const { ts, format, path } = argv;
   const formatCheck = checkFormatOption(format);
   if (formatCheck.ok) {
-    const spinner = ora("Generate files\n").start();
-    const timeout = setTimeout(() => {
-      DB.multipleTablesDesc(dbName, (result) => {
-        const rows = result;
-        if (rows && rows.length > 0) {
-          const tables = rows.reduce((tables, row) => {
-            (tables[row.table] = tables[row.table] || []).push(row);
-            return tables;
-          }, {});
-          generateMultiple(dbName, tables, path, ts, format, (result) => {
-            ConsoleWrite.message(result);
-            spinner.stop();
-          });
-        } else {
-          ConsoleWrite.message(result);
-        }
-      });
-      clearTimeout(timeout);
-    }, 2000);
+    //const spinner = ora("Generate files\n").start();
+    DB.multipleTablesDesc(dbName, (result) => {
+      const rows = result;
+      if (rows && rows.length > 0) {
+        const tables = rows.reduce((tables, row) => {
+          (tables[row.table] = tables[row.table] || []).push(row);
+          return tables;
+        }, {});
+        generateMultiple(dbName, tables, path, ts, format, (result) => {
+          ConsoleWrite.success(result);
+          //spinner.stop();
+          process.exit(); //TODO -> Voir si y a mieux
+        });
+      } else {
+        ConsoleWrite.message(result);
+      }
+    });
   } else {
     ConsoleWrite.error(formatCheck.message);
   }
@@ -60,21 +58,20 @@ function generateModelFromTable(argv, dbName) {
   const { table, ts, format, path } = argv;
   const formatCheck = checkFormatOption(format);
   if (formatCheck.ok) {
-    const spinner = ora("Generate file\n").start();
-    const timeout = setTimeout(() => {
-      DB.tableDesc(dbName, table, (result) => {
-        const rows = result;
-        if (rows && rows.length > 0) {
-          generateOne(dbName, rows, path, ts, format, (result) => {
-            ConsoleWrite.message(result);
-            spinner.stop();
-          });
-        } else {
-          ConsoleWrite.message(result);
-        }
-      });
-      clearTimeout(timeout);
-    }, 1000);
+    //const spinner = ora("Generate file\n").start();
+
+    DB.tableDesc(dbName, table, (result) => {
+      const rows = result;
+      if (rows && rows.length > 0) {
+        generateOne(dbName, rows, path, ts, format, (result) => {
+          ConsoleWrite.success(result);
+          //spinner.stop();
+          process.exit(); //TODO -> Voir si y a mieux
+        });
+      } else {
+        ConsoleWrite.message(result);
+      }
+    });
   } else {
     ConsoleWrite.error(formatCheck.message);
   }
@@ -113,7 +110,7 @@ const generateOne = (dbName, colsInfos, path, ts = false, format, callback) => {
   try {
     const generate = generateFn(dbName, colsInfos, path, format);
     ConsoleWrite.message(generate);
-    callback("Table file generated.");
+    callback("File model for table " + colsInfos[0].table + " generated.");
   } catch (err) {
     errorHandler(err);
   }

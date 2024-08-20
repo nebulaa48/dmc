@@ -73,7 +73,7 @@ const interactiveConfig = (argv) => {
         const { dbHost, dbPort, dbName, dbUser, dbPassword } = result;
 
         if (!dbName) {
-          ConsoleWrite.info('\n')
+          ConsoleWrite.message('\n')
           ConsoleWrite.info("Missing Database Name.\n");
           retry();
         } else {
