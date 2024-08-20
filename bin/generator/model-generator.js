@@ -12,7 +12,7 @@ export function modelGenerator() {
     GENERATE_ALL_MODELS: GDB,
     GENERATE_MODEL_FROM_TABLE: GT,
   } = COMMANDS;
-  const { TS, P, F, FI } = OPTIONS;
+  const { TS, P, F, FI, CI } = OPTIONS;
 
   yargs
     .usage("$0 <cmd> [args]")
@@ -24,6 +24,7 @@ export function modelGenerator() {
     .option(P.key, P.options)
     .option(F.key, F.options)
     .option(FI.key, FI.options)
+    .option(CI.key, CI.options)
     .strict()
     .help().argv;
 }

@@ -1,5 +1,6 @@
 import { CASE_FORMAT, CASE_FORMAT_LIST } from "../entities/case-format.js";
 import { Option } from "../entities/option.js";
+import { configInfos } from "./config.infos.js";
 import { formatInfos } from "./format-infos.js";
 
 const TS = new Option("ts", {
@@ -29,10 +30,20 @@ const FI = new Option(
   },
   formatInfos
 );
+const CI = new Option(
+  "ci",
+  {
+    type: "boolean",
+    alias: "config-infos",
+    describe: "Show current config infos",
+  },
+  configInfos
+);
 
 export const OPTIONS = {
   TS,
   P,
   F,
   FI,
+  CI,
 };

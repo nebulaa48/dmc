@@ -1,17 +1,17 @@
 import { config } from "./config.js";
-import { generateModelFromTable, generateAllModels } from "./generate.js";
+import { generate } from "./generate.js";
 import { Command } from "../entities/command.js";
 import { global } from "./global.js";
 
 const GENERATE_ALL_MODELS = new Command(
   "gdb",
   "Generate Files Models From Database",
-  generateAllModels
+  (argv) => generate(argv)
 );
 const GENERATE_MODEL_FROM_TABLE = new Command(
   "gt [table]",
   "Generate File Model From A Specific Table",
-  generateModelFromTable,
+  (argv) => generate(argv, true),
   (yargs) => {
     yargs.positional("table", {
       type: "string",

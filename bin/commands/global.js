@@ -11,6 +11,8 @@ export function global(argv) {
   if (!arg) {
     if (argv[OPTIONS.FI.key]) {
       OPTIONS.FI.action();
+    } else if (argv[OPTIONS.CI.key]) {
+      OPTIONS.CI.action();
     } else {
       welcome();
     }
@@ -18,7 +20,9 @@ export function global(argv) {
 }
 
 function welcome() {
-  const { version } = parse("../package.json");
+  const p = parse("../package.json");
+
+  const version = p?.version || "Unknow";
 
   console.log("\n");
   console.log(

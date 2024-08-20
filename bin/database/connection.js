@@ -1,12 +1,16 @@
 import { createPool } from "mysql";
 import { getConfig } from "../../utils/config-utils.js";
 
-const CONFIG = getConfig();
-
-export const connection = createPool({
-  host: CONFIG.dbHost,
-  user: CONFIG.dbUser,
-  password: CONFIG.dbPassword,
-  database: CONFIG.dbName,
-  port: CONFIG.dbPort,
-});
+export const connection = () => {
+  const config = getConfig();
+  if (config) {
+    return createPool({
+      host: config.dbHost,
+      user: config.dbUser,
+      password: config.dbPassword,
+      database: config.dbName,
+      port: config.dbPort,
+    });
+  }
+  return null;
+};

@@ -1,13 +1,10 @@
 import { connection } from "./connection.js";
-import { getConfig } from "../../utils/config-utils.js";
 import { errorHandler } from "../generator/error-handler.js";
 import Error from "../entities/error.js";
 
-const { dbName } = getConfig();
-
 export const DB = {
-  multipleTablesDesc: (callback) =>
-    connection.query(
+  multipleTablesDesc: (dbName, callback) =>
+    query(
       "SELECT TABLE_NAME as 'table', COLUMN_NAME as 'column', DATA_TYPE as 'type', IS_NULLABLE as 'nullable', COLUMN_KEY as 'key_type', COLUMN_DEFAULT as 'default', EXTRA as 'extra' from information_schema.COLUMNS WHERE TABLE_SCHEMA='" +
         dbName +
         "'; ",
@@ -23,8 +20,8 @@ export const DB = {
         }
       }
     ),
-  tableDesc: (table, callback) =>
-    connection.query(
+  tableDesc: (dbName, table, callback) =>
+    query(
       "SELECT TABLE_NAME as 'table', COLUMN_NAME as 'column', DATA_TYPE as 'type', IS_NULLABLE as 'nullable', COLUMN_KEY as 'key_type', COLUMN_DEFAULT as 'default', EXTRA as 'extra' from information_schema.COLUMNS WHERE TABLE_SCHEMA='" +
         dbName +
         "' AND TABLE_NAME='" +
@@ -44,4 +41,13 @@ export const DB = {
         }
       }
     ),
+};
+
+const query = (query, callback) => {
+  const pool = connection();
+  if (pool) {
+    pool.query(query, callback);
+  } else {
+    errorHandler(new Error("NO_POOL", 'Unable to connect. Try "dmc config".'));
+  }
 };

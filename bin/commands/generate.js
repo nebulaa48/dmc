@@ -7,20 +7,35 @@ import { CASE_FORMAT } from "../entities/case-format.js";
 import { getConfig } from "../../utils/config-utils.js";
 import { errorHandler } from "../generator/error-handler.js";
 
-export function generateAllModels(argv) {
+export function generate(argv, fromTable = false) {
+  const config = getConfig();
+
+  if (config) {
+    const dbName = config.dbName;
+    if (fromTable) {
+      generateModelFromTable(argv, dbName);
+    } else {
+      generateAllModels(argv, dbName);
+    }
+  } else {
+    console.log('No configuration. Try "dmc config".');
+  }
+}
+
+function generateAllModels(argv, dbName) {
   const { ts, format, path } = argv;
   const formatCheck = checkFormatOption(format);
   if (formatCheck.ok) {
     const spinner = ora("Generate files\n").start();
     const timeout = setTimeout(() => {
-      DB.multipleTablesDesc((result) => {
+      DB.multipleTablesDesc(dbName, (result) => {
         const rows = result;
         if (rows && rows.length > 0) {
           const tables = rows.reduce((tables, row) => {
             (tables[row.table] = tables[row.table] || []).push(row);
             return tables;
           }, {});
-          generateMultiple(tables, path, ts, format, (result) => {
+          generateMultiple(dbName,tables, path, ts, format, (result) => {
             console.log(result);
             spinner.stop();
           });
@@ -35,16 +50,16 @@ export function generateAllModels(argv) {
   }
 }
 
-export function generateModelFromTable(argv) {
+function generateModelFromTable(argv, dbName) {
   const { table, ts, format, path } = argv;
   const formatCheck = checkFormatOption(format);
   if (formatCheck.ok) {
     const spinner = ora("Generate file\n").start();
     const timeout = setTimeout(() => {
-      DB.tableDesc(table, (result) => {
+      DB.tableDesc(dbName, table, (result) => {
         const rows = result;
         if (rows && rows.length > 0) {
-          generateOne(rows, path, ts, format, (result) => {
+          generateOne(dbName,rows, path, ts, format, (result) => {
             console.log(result);
             spinner.stop();
           });
@@ -59,7 +74,14 @@ export function generateModelFromTable(argv) {
   }
 }
 
-const generateMultiple = (tables, path, ts = false, format, callback) => {
+const generateMultiple = (
+  dbName,
+  tables,
+  path,
+  ts = false,
+  format,
+  callback
+) => {
   const tableNames = Object.keys(tables);
   setOutputFolder(path);
 
@@ -67,7 +89,7 @@ const generateMultiple = (tables, path, ts = false, format, callback) => {
   try {
     const generated = [];
     for (const name of tableNames) {
-      const generate = generateFn(tables[name], path, format);
+      const generate = generateFn(dbName, tables[name], path, format);
       console.log(generate);
       generated.push(generate);
     }
@@ -77,13 +99,13 @@ const generateMultiple = (tables, path, ts = false, format, callback) => {
   }
 };
 
-const generateOne = (colsInfos, path, ts = false, format, callback) => {
+const generateOne = (dbName, colsInfos, path, ts = false, format, callback) => {
   setOutputFolder(path);
 
   const generateFn = ts ? generateFileModelTS : generateFileModelJS;
 
   try {
-    const generate = generateFn(colsInfos, path, format);
+    const generate = generateFn(dbName, colsInfos, path, format);
     console.log(generate);
     callback("Table file generated.");
   } catch (err) {
@@ -91,9 +113,8 @@ const generateOne = (colsInfos, path, ts = false, format, callback) => {
   }
 };
 
-const generateFileModelJS = (colsInfos, path, format) => {
+const generateFileModelJS = (dbName, colsInfos, path, format) => {
   try {
-    const { dbName } = getConfig();
     const tableName = colsInfos[0].table;
     const columns = colsInfos.map((p) => formatCase(p.column, format[1]));
     const content = `//GENERATED TABLE MODEL FOR TABLE ${tableName} FROM DATABASE ${dbName}\n\nclass ${formatCase(
@@ -111,10 +132,8 @@ const generateFileModelJS = (colsInfos, path, format) => {
     errorHandler(err);
   }
 };
-const generateFileModelTS = (colsInfos, path, format) => {
+const generateFileModelTS = (dbName, colsInfos, path, format) => {
   try {
-    const { dbName } = getConfig();
-
     const tableName = colsInfos[0].table;
     const columns = colsInfos.map((p) => ({
       col: formatCase(p.column, format[1]),

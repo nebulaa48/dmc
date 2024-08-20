@@ -2,22 +2,52 @@ import yargsInteractive from "yargs-interactive";
 import { writeFileSync } from "fs";
 import { Config } from "../entities/config.js";
 import { errorHandler } from "../generator/error-handler.js";
+import { getConfig } from "../../utils/config-utils.js";
 
 export function config(argv) {
+  const c = getConfig();
+
+  if (c) {
+    console.log('A config already exists for database "' + c.dbName + '"');
+    yargsInteractive()
+      .interactive({
+        interactive: { default: true },
+        overwrite: {
+          type: "confirm",
+          describe: "Would you like to overwrite config ?",
+        },
+      })
+      .then((result) => {
+        if (result.overwrite) {
+          description();
+          interactiveConfig(argv);
+        }
+      });
+  } else {
+    description();
+    interactiveConfig(argv);
+  }
+}
+
+const description = () => {
+  console.log(
+    "You will need to answer a few questions in order to connect DMC to the required database..."
+  );
+};
+const interactiveConfig = (argv) => {
   yargsInteractive()
-    .usage("$0 <command> [args]")
     .interactive({
       interactive: { default: true },
       dbHost: {
         type: "input",
         default: "localhost",
-        describe: "Host",
+        describe: "Database Host",
         prompt: "always",
       },
       dbPort: {
         type: "number",
         default: 3306,
-        describe: "Port",
+        describe: "Database Port",
         prompt: "always",
       },
       dbName: {
@@ -26,13 +56,13 @@ export function config(argv) {
       },
       dbUser: {
         type: "input",
-        describe: "User",
+        describe: "Database User",
         default: "root",
         prompt: "always",
       },
       dbPassword: {
         type: "password",
-        describe: "Password",
+        describe: "Database Password",
       },
     })
     .then((result) => {
@@ -49,17 +79,15 @@ export function config(argv) {
 
           writeFileSync("dmc-config.json", content);
 
-          callback("Config - ok.");
+          console.log("Config - ok.");
         }
       } catch (err) {
         errorHandler(err);
       }
     });
-}
-
+};
 const retry = (argv) => {
   yargsInteractive()
-    .usage("$0 <command> [args]")
     .interactive({
       interactive: { default: true },
       retry: {
@@ -70,7 +98,7 @@ const retry = (argv) => {
     .then((result) => {
       if (result.retry) {
         console.log("\n");
-        config(argv);
+        interactiveConfig(argv);
       }
     });
 };
