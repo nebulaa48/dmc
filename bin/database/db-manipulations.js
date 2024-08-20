@@ -1,6 +1,8 @@
 import { connection } from "./connection.js";
 import { errorHandler } from "../generator/error-handler.js";
 import Error from "../entities/error.js";
+import { COMMANDS } from "../commands/commands.js";
+import { ConsoleWrite } from "../../utils/console-write.js";
 
 export const DB = {
   multipleTablesDesc: (dbName, callback) =>
@@ -48,6 +50,13 @@ const query = (query, callback) => {
   if (pool) {
     pool.query(query, callback);
   } else {
-    errorHandler(new Error("NO_POOL", 'Unable to connect. Try "dmc config".'));
+    errorHandler(
+      new Error(
+        "NO_POOL",
+        "Unable to connect. Try " +
+          ConsoleWrite.commandFormat(COMMANDS.CONFIG) +
+          "."
+      )
+    );
   }
 };

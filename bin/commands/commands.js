@@ -23,7 +23,7 @@ const GENERATE_MODEL_FROM_TABLE = new Command(
 
 export const CONFIG = new Command(
   "config",
-  "To link DMC to a MySQL server",
+  "To link DMC to a Database",
   config
 );
 

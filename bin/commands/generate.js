@@ -6,6 +6,8 @@ import { generateFile, setOutputFolder } from "../../utils/generate-utils.js";
 import { CASE_FORMAT } from "../entities/case-format.js";
 import { getConfig } from "../../utils/config-utils.js";
 import { errorHandler } from "../generator/error-handler.js";
+import { ConsoleWrite } from "../../utils/console-write.js";
+import { COMMANDS } from "./commands.js";
 
 export function generate(argv, fromTable = false) {
   const config = getConfig();
@@ -18,7 +20,11 @@ export function generate(argv, fromTable = false) {
       generateAllModels(argv, dbName);
     }
   } else {
-    console.log('No configuration. Try "dmc config".');
+    ConsoleWrite.info(
+      "No configuration found. Try " +
+        ConsoleWrite.commandFormat(COMMANDS.CONFIG) +
+        "."
+    );
   }
 }
 
@@ -35,18 +41,18 @@ function generateAllModels(argv, dbName) {
             (tables[row.table] = tables[row.table] || []).push(row);
             return tables;
           }, {});
-          generateMultiple(dbName,tables, path, ts, format, (result) => {
-            console.log(result);
+          generateMultiple(dbName, tables, path, ts, format, (result) => {
+            ConsoleWrite.message(result);
             spinner.stop();
           });
         } else {
-          console.log(result);
+          ConsoleWrite.message(result);
         }
       });
       clearTimeout(timeout);
     }, 2000);
   } else {
-    console.log(formatCheck.message);
+    ConsoleWrite.error(formatCheck.message);
   }
 }
 
@@ -59,18 +65,18 @@ function generateModelFromTable(argv, dbName) {
       DB.tableDesc(dbName, table, (result) => {
         const rows = result;
         if (rows && rows.length > 0) {
-          generateOne(dbName,rows, path, ts, format, (result) => {
-            console.log(result);
+          generateOne(dbName, rows, path, ts, format, (result) => {
+            ConsoleWrite.message(result);
             spinner.stop();
           });
         } else {
-          console.log(result);
+          ConsoleWrite.message(result);
         }
       });
       clearTimeout(timeout);
     }, 1000);
   } else {
-    console.log(formatCheck.message);
+    ConsoleWrite.error(formatCheck.message);
   }
 }
 
@@ -90,7 +96,7 @@ const generateMultiple = (
     const generated = [];
     for (const name of tableNames) {
       const generate = generateFn(dbName, tables[name], path, format);
-      console.log(generate);
+      ConsoleWrite.message(generate);
       generated.push(generate);
     }
     callback(generated.length + "/" + tableNames.length + " tables generated.");
@@ -106,7 +112,7 @@ const generateOne = (dbName, colsInfos, path, ts = false, format, callback) => {
 
   try {
     const generate = generateFn(dbName, colsInfos, path, format);
-    console.log(generate);
+    ConsoleWrite.message(generate);
     callback("Table file generated.");
   } catch (err) {
     errorHandler(err);

@@ -2,13 +2,16 @@ import yargsInteractive from "yargs-interactive";
 import { writeFileSync } from "fs";
 import { Config } from "../entities/config.js";
 import { errorHandler } from "../generator/error-handler.js";
-import { getConfig } from "../../utils/config-utils.js";
+import { CONFIG_FILE_NAME, getConfig } from "../../utils/config-utils.js";
+import { ConsoleWrite } from "../../utils/console-write.js";
 
 export function config(argv) {
   const c = getConfig();
 
   if (c) {
-    console.log('A config already exists for database "' + c.dbName + '"');
+    ConsoleWrite.message(
+      'A config already exists for database "' + c.dbName + '"'
+    );
     yargsInteractive()
       .interactive({
         interactive: { default: true },
@@ -30,7 +33,7 @@ export function config(argv) {
 }
 
 const description = () => {
-  console.log(
+  ConsoleWrite.message(
     "You will need to answer a few questions in order to connect DMC to the required database..."
   );
 };
@@ -70,16 +73,17 @@ const interactiveConfig = (argv) => {
         const { dbHost, dbPort, dbName, dbUser, dbPassword } = result;
 
         if (!dbName) {
-          console.log("\nMissing Database Name.\n");
+          ConsoleWrite.info('\n')
+          ConsoleWrite.info("Missing Database Name.\n");
           retry();
         } else {
           const config = new Config(dbHost, dbPort, dbName, dbUser, dbPassword);
 
           const content = JSON.stringify(config);
 
-          writeFileSync("dmc-config.json", content);
+          writeFileSync(CONFIG_FILE_NAME, content);
 
-          console.log("Config - ok.");
+          ConsoleWrite.message("Config - ok.");
         }
       } catch (err) {
         errorHandler(err);
@@ -97,7 +101,7 @@ const retry = (argv) => {
     })
     .then((result) => {
       if (result.retry) {
-        console.log("\n");
+        ConsoleWrite.message("\n");
         interactiveConfig(argv);
       }
     });

@@ -4,6 +4,7 @@ import boxen from "boxen";
 import colors from "colors";
 import chalk from "chalk";
 import { parse } from "../../utils/json-utils.js";
+import { ConsoleWrite } from "../../utils/console-write.js";
 
 export function global(argv) {
   const arg = argv._[0];
@@ -24,8 +25,8 @@ function welcome() {
 
   const version = p?.version || "Unknow";
 
-  console.log("\n");
-  console.log(
+  ConsoleWrite.message("\n");
+  ConsoleWrite.message(
     boxen(
       chalk.bold(colors.rainbow("WELCOME TO DMC [Database Model CLI] !!")),
       {
@@ -36,12 +37,12 @@ function welcome() {
       }
     )
   );
-  console.log(
+  ConsoleWrite.message(
     chalk.bold(
       "Type " +
         chalk.dim('"dmc --help"') +
         " for more information OR try " +
-        chalk.dim('"dmc ' + COMMANDS.CONFIG.command + '"') +
+        ConsoleWrite.commandFormat(COMMANDS.CONFIG) +
         " to begin."
     )
   );

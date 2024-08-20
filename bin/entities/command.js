@@ -1,3 +1,5 @@
+import { CLI_NAME } from "../../utils/command-utils.js";
+
 export class Command {
   constructor(command, description, action, builder) {
     this.command = command;
@@ -8,5 +10,7 @@ export class Command {
     this.handler = (args) => {
       action && action(args);
     };
+
+    this.fullCommand = CLI_NAME + " " + command;
   }
 }
