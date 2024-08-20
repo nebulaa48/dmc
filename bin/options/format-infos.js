@@ -5,27 +5,12 @@ import {
   FILE_CASE_FORMAT_EXEMPLES,
   PROPERTY_CASE_FORMAT_EXEMPLES,
 } from "../entities/case-format.js";
+import { TABLE_CHARS } from "../entities/table-chars.js";
 
 export const formatInfos = () => {
   var table = new Table({
     head: [chalk.bold.white("Format Option"), chalk.bold.white("Exemple")],
-    chars: {
-      top: "═",
-      "top-mid": "╤",
-      "top-left": "╔",
-      "top-right": "╗",
-      bottom: "═",
-      "bottom-mid": "╧",
-      "bottom-left": "╚",
-      "bottom-right": "╝",
-      left: "║",
-      "left-mid": "╟",
-      mid: "─",
-      "mid-mid": "┼",
-      right: "║",
-      "right-mid": "╢",
-      middle: "│",
-    },
+    chars: TABLE_CHARS,
   });
   table.push(
     ...CASE_FORMAT_LIST.map((c) => [
